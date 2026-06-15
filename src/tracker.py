@@ -122,9 +122,13 @@ def registrar_sheets(linha: dict, credenciais: str, planilha: str,
         ws = doc.add_worksheet(title=aba, rows=200, cols=len(COLUNAS))
 
     valores = ws.get_all_values()
-    if not valores:  # planilha vazia -> cria o cabeçalho
+    # Garante o cabeçalho de forma robusta: se a 1ª linha não for exatamente as
+    # COLUNAS, insere o cabeçalho no topo (sem sobrescrever dados existentes).
+    if not valores:
         ws.append_row(COLUNAS, value_input_option="USER_ENTERED")
-        valores = [COLUNAS]
+    elif valores[0] != COLUNAS:
+        ws.insert_row(COLUNAS, index=1, value_input_option="USER_ENTERED")
+    valores = ws.get_all_values()
 
     nova = [linha[c] for c in COLUNAS]
     nomes_existentes = [r[0] for r in valores[1:]]  # coluna A, sem o cabeçalho
