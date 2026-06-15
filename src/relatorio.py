@@ -86,9 +86,15 @@ def _grafico_lucro_dia(analise) -> str:
     ax.set_title("Lucro líquido por dia (comissão − cashback)", fontsize=12,
                  color=TEXTO, weight="bold", pad=12)
     ax.set_ylabel("R$ / dia", fontsize=9, color=TEXTO)
+    # Marca como "equilíbrio" a variante cujo lucro é desprezível frente à maior
+    # barra — evita que um valor ~zero pareça dado faltante para o gestor.
+    maxabs = max((abs(v) for v in valores), default=1) or 1
     for b, v in zip(barras, valores):
+        rotulo = brl(v)
+        if abs(v) < 0.05 * maxabs:
+            rotulo = f"{brl(v)} · equilíbrio"
         ax.text(b.get_x() + b.get_width() / 2, b.get_height(),
-                brl(v), ha="center", va="bottom", fontsize=9, color=TEXTO)
+                rotulo, ha="center", va="bottom", fontsize=9, color=TEXTO)
     _estilo_eixo(ax)
     return _fig_para_base64(fig)
 
