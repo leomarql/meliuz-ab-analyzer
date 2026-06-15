@@ -111,9 +111,9 @@ def analisar(df: pd.DataFrame, parceiro: str) -> ResultadoAnalise:
     """
     Analisa um teste A/B já limpo e devolve a decisão de qual variante escalar.
 
-    Estatística: como as variantes rodam em paralelo nas mesmas datas, usamos um
+    Estatística: como as variantes rodam em paralelo nas mesmas datas, usei um
     teste PAREADO por data (t pareado) entre o 1º e o 2º colocados em lucro/dia,
-    com Wilcoxon como reforço não-paramétrico. Se as datas não casarem, caímos
+    com Wilcoxon como reforço não-paramétrico. Se as datas não casarem, cai
     para o teste de Welch (amostras independentes).
     """
     grupos = sorted(df["grupo"].unique().tolist())
@@ -136,7 +136,7 @@ def analisar(df: pd.DataFrame, parceiro: str) -> ResultadoAnalise:
     vice = metricas[1].grupo
     lucro_venc, lucro_vice = metricas[0].lucro_dia, metricas[1].lucro_dia
     impacto_dia = lucro_venc - lucro_vice
-    # Lift % é indefinido quando o vice está em ~zero; nesse caso usamos só o
+    # Lift % é indefinido quando o vice está em ~zero; nesse caso usa-se só o
     # impacto absoluto (R$/dia) para comunicar o ganho.
     lift_pct = (impacto_dia / abs(lucro_vice)) if abs(lucro_vice) > 1e-6 else None
 

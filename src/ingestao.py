@@ -17,7 +17,7 @@ from dataclasses import dataclass, field
 
 import pandas as pd
 
-# Nomes de coluna esperados (após normalização). Mapeamos variações comuns
+# Nomes de coluna esperados (após normalização). São mapeadas variações comuns
 # para um schema interno estável, para o resto do código não depender de acentos.
 COLUNAS_CANONICAS = {
     "data": "data",
