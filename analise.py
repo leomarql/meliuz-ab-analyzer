@@ -94,6 +94,15 @@ def _imprimir_resumo(ing, ana, caminho_rel, caminho_tracker, url_sheets):
     if ana.p_valor is not None:
         detalhe += " · p=" + f"{ana.p_valor:.4f}".replace(".", ",")
     print(detalhe)
+    if ana.ic95_impacto:
+        lo, hi = ana.ic95_impacto
+        print(f" Ganho com 95% de confiança: entre {brl(lo)} e {brl(hi)} por dia")
+    if ana.alertas_validade:
+        print()
+        print(" Validade do teste:")
+        marca = {"info": "✓", "atencao": "⚠", "critico": "✗"}
+        for d in ana.alertas_validade:
+            print(f"   {marca.get(d.severidade, '·')} {d.titulo}")
     print()
     print(f" Relatório:        {caminho_rel}")
     print(f" Tracker (CSV):    {caminho_tracker}")

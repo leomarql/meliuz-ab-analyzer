@@ -206,6 +206,12 @@ TEMPLATE_HTML = """<!DOCTYPE html>
   .alerta { background: #FFFBEB; border-left: 3px solid {{ ambar }};
             padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 8px 0;
             font-size: 14px; }
+  .diag { padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 8px 0;
+          font-size: 14px; border-left: 3px solid #9CA3AF; background: #F9FAFB; }
+  .diag.critico { border-left-color: #B91C1C; background: #FEF2F2; }
+  .diag.atencao { border-left-color: {{ ambar }}; background: #FFFBEB; }
+  .diag.info { border-left-color: {{ verde }}; background: #F0FDF4; }
+  .diag .t { font-weight: 600; }
   .stat { font-size: 14px; background: #F9FAFB; border-radius: 10px;
           padding: 16px 20px; }
   .stat b { color: {{ texto }}; }
@@ -266,6 +272,9 @@ TEMPLATE_HTML = """<!DOCTYPE html>
     <h3>Consistência ao longo do tempo</h3>
     <div class="grafico"><img src="{{ graf_evolucao }}" alt="Evolução diária"></div>
 
+    <h3>Validade do teste</h3>
+    {% for d in validade %}<div class="diag {{ d.severidade }}"><span class="t">{{ d.titulo }}.</span> {{ d.detalhe }}</div>{% endfor %}
+
     <h3>Base estatística</h3>
     <div class="stat">
       Comparação entre <b>{{ vencedor }}</b> (1º) e <b>{{ vice }}</b> (2º) pelo
@@ -275,6 +284,9 @@ TEMPLATE_HTML = """<!DOCTYPE html>
       (p &lt; 0,05): há evidência para escalar com segurança.
       {% else %}A diferença <b>não</b> é estatisticamente significativa
       (p ≥ 0,05): recomenda-se estender o teste antes de decidir.{% endif %}
+      {% if ic95_lo %}<br><br>O ganho médio do {{ vencedor }} é de
+      <b>{{ impacto }}/dia</b>, com 95% de confiança entre
+      <b>{{ ic95_lo }}</b> e <b>{{ ic95_hi }}</b> por dia.{% endif %}
     </div>
 
   </div>
@@ -331,6 +343,10 @@ def gerar_relatorio(ingestao, analise, caminho_saida: str) -> str:
         "p_wilcoxon": (f"{a.p_valor_wilcoxon:.4f}".replace(".", ",")
                        if a.p_valor_wilcoxon is not None else None),
         "significativo": a.significativo,
+        "validade": [{"severidade": d.severidade, "titulo": d.titulo,
+                      "detalhe": d.detalhe} for d in a.alertas_validade],
+        "ic95_lo": (brl(a.ic95_impacto[0]) if a.ic95_impacto else None),
+        "ic95_hi": (brl(a.ic95_impacto[1]) if a.ic95_impacto else None),
     }
 
     env = Environment(autoescape=True)

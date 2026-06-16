@@ -19,6 +19,8 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
+from validacao import verificar_validade
+
 ALPHA = 0.05  # nível de significância para a decisão
 
 
@@ -58,6 +60,8 @@ class ResultadoAnalise:
     decisao: str                        # frase acionável
     tradeoffs: list = field(default_factory=list)  # alertas de trade-off
     impacto_dia: float | None = None    # R$/dia adicionais do vencedor sobre o vice
+    ic95_impacto: tuple | None = None   # IC 95% do ganho diário (lo, hi) em R$
+    alertas_validade: list = field(default_factory=list)  # diagnósticos do teste
 
     @property
     def resumo_uma_linha(self) -> str:
@@ -111,9 +115,9 @@ def analisar(df: pd.DataFrame, parceiro: str) -> ResultadoAnalise:
     """
     Analisa um teste A/B já limpo e devolve a decisão de qual variante escalar.
 
-    Estatística: como as variantes rodam em paralelo nas mesmas datas, usei um
+    Estatística: como as variantes rodam em paralelo nas mesmas datas, é usado um
     teste PAREADO por data (t pareado) entre o 1º e o 2º colocados em lucro/dia,
-    com Wilcoxon como reforço não-paramétrico. Se as datas não casarem, cai
+    com Wilcoxon como reforço não-paramétrico. Se as datas não casarem, caímos
     para o teste de Welch (amostras independentes).
     """
     grupos = sorted(df["grupo"].unique().tolist())
@@ -131,12 +135,13 @@ def analisar(df: pd.DataFrame, parceiro: str) -> ResultadoAnalise:
             p_valor_wilcoxon=None, teste_usado="—", significativo=False,
             confianca="Inconclusivo",
             decisao=f"Apenas uma variante ({vencedor}); sem comparação possível",
+            alertas_validade=verificar_validade(df),
         )
 
     vice = metricas[1].grupo
     lucro_venc, lucro_vice = metricas[0].lucro_dia, metricas[1].lucro_dia
     impacto_dia = lucro_venc - lucro_vice
-    # Lift % é indefinido quando o vice está em ~zero; nesse caso usa-se só o
+    # Lift % é indefinido quando o vice está em ~zero; nesse caso usamos só o
     # impacto absoluto (R$/dia) para comunicar o ganho.
     lift_pct = (impacto_dia / abs(lucro_vice)) if abs(lucro_vice) > 1e-6 else None
 
@@ -146,16 +151,32 @@ def analisar(df: pd.DataFrame, parceiro: str) -> ResultadoAnalise:
     pareado = pd.concat([s_venc, s_vice], axis=1, join="inner", keys=["v", "u"]).dropna()
 
     p_wilcoxon = None
+    ic95 = None
     if len(pareado) >= 5 and (pareado["v"] - pareado["u"]).abs().sum() > 0:
         t_stat, p_val = stats.ttest_rel(pareado["v"], pareado["u"])
         teste = f"t pareado por data (n={len(pareado)} dias)"
+        # IC 95% da diferença média diária (vencedor - vice).
+        dif = pareado["v"] - pareado["u"]
+        n = len(dif)
+        erro = dif.std(ddof=1) / np.sqrt(n)
+        t_crit = stats.t.ppf(0.975, n - 1)
+        ic95 = (float(dif.mean() - t_crit * erro), float(dif.mean() + t_crit * erro))
         try:
             _, p_wilcoxon = stats.wilcoxon(pareado["v"], pareado["u"])
         except ValueError:
             p_wilcoxon = None
     else:
-        t_stat, p_val = stats.ttest_ind(s_venc.dropna(), s_vice.dropna(), equal_var=False)
-        teste = f"Welch (independentes, n={s_venc.notna().sum()} vs {s_vice.notna().sum()})"
+        a, b = s_venc.dropna(), s_vice.dropna()
+        t_stat, p_val = stats.ttest_ind(a, b, equal_var=False)
+        teste = f"Welch (independentes, n={a.size} vs {b.size})"
+        # IC 95% da diferença de médias (aproximação de Welch-Satterthwaite).
+        se = np.sqrt(a.var(ddof=1) / a.size + b.var(ddof=1) / b.size)
+        if se > 0:
+            gl = se**4 / ((a.var(ddof=1) / a.size) ** 2 / (a.size - 1)
+                          + (b.var(ddof=1) / b.size) ** 2 / (b.size - 1))
+            t_crit = stats.t.ppf(0.975, gl)
+            dm = a.mean() - b.mean()
+            ic95 = (float(dm - t_crit * se), float(dm + t_crit * se))
 
     significativo = bool(np.isfinite(p_val) and p_val < ALPHA)
     if not np.isfinite(p_val):
@@ -184,6 +205,7 @@ def analisar(df: pd.DataFrame, parceiro: str) -> ResultadoAnalise:
         p_valor_wilcoxon=(float(p_wilcoxon) if p_wilcoxon is not None else None),
         teste_usado=teste, significativo=significativo, confianca=confianca,
         decisao=decisao, tradeoffs=tradeoffs, impacto_dia=impacto_dia,
+        ic95_impacto=ic95, alertas_validade=verificar_validade(df),
     )
 
 
