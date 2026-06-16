@@ -212,6 +212,10 @@ TEMPLATE_HTML = """<!DOCTYPE html>
   .diag.atencao { border-left-color: {{ ambar }}; background: #FFFBEB; }
   .diag.info { border-left-color: {{ verde }}; background: #F0FDF4; }
   .diag .t { font-weight: 600; }
+  .proximo { background: #FFF5FA; border: 1px solid {{ rosa }}; border-radius: 10px;
+             padding: 16px 20px; font-size: 14px; margin: 8px 0; }
+  .proximo .rotulo { font-size: 12px; text-transform: uppercase; letter-spacing: .06em;
+                     color: {{ rosa }}; font-weight: 700; display: block; margin-bottom: 4px; }
   .stat { font-size: 14px; background: #F9FAFB; border-radius: 10px;
           padding: 16px 20px; }
   .stat b { color: {{ texto }}; }
@@ -289,6 +293,14 @@ TEMPLATE_HTML = """<!DOCTYPE html>
       <b>{{ ic95_lo }}</b> e <b>{{ ic95_hi }}</b> por dia.{% endif %}
     </div>
 
+    {% if proximo_teste %}
+    <h3>Próximo teste sugerido</h3>
+    <div class="proximo">
+      <span class="rotulo">Recomendação de growth</span>
+      {{ proximo_teste }}
+    </div>
+    {% endif %}
+
   </div>
   <div class="rodape">Relatório gerado automaticamente · Solução de análise de
     testes A/B de cashback · Time de Growth</div>
@@ -347,6 +359,10 @@ def gerar_relatorio(ingestao, analise, caminho_saida: str) -> str:
                       "detalhe": d.detalhe} for d in a.alertas_validade],
         "ic95_lo": (brl(a.ic95_impacto[0]) if a.ic95_impacto else None),
         "ic95_hi": (brl(a.ic95_impacto[1]) if a.ic95_impacto else None),
+        "proximo_teste": (a.sugestao_proximo_teste.texto
+                          if a.sugestao_proximo_teste
+                          and a.sugestao_proximo_teste.padrao != "indefinido"
+                          else None),
     }
 
     env = Environment(autoescape=True)

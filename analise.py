@@ -108,6 +108,11 @@ def _imprimir_resumo(ing, ana, caminho_rel, caminho_tracker, url_sheets):
     print(f" Tracker (CSV):    {caminho_tracker}")
     if url_sheets:
         print(f" Tracker (Sheets): {url_sheets}")
+    s = ana.sugestao_proximo_teste
+    if s is not None and getattr(s, "padrao", "indefinido") != "indefinido":
+        print()
+        print(" Próximo teste sugerido:")
+        print(f"   {s.texto}")
     print(regua)
 
 
