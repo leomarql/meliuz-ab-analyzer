@@ -36,6 +36,19 @@ AMBAR = "#B45309"     # atenção / trade-off
 # linha (onde o cinza único deixava Grupo 2 e 3 indistinguíveis).
 PALETA_LINHAS = ["#2563EB", "#D97706", "#0D9488", "#7C3AED"]
 
+DIAS_ANO = 365  # base para anualizar o ganho diário
+
+
+def brl_compacto(valor: float) -> str:
+    """Moeda BR abreviada para manchete: 187245 -> 'R$ 187 mil'; 1.6e6 -> 'R$ 1,6 mi'."""
+    if valor is None or valor != valor:
+        return "—"
+    if abs(valor) >= 1_000_000:
+        return ("R$ " + f"{valor / 1_000_000:.1f}".replace(".", ",") + " mi")
+    if abs(valor) >= 1_000:
+        return "R$ " + f"{valor / 1_000:,.0f}".replace(",", ".") + " mil"
+    return "R$ " + f"{valor:,.0f}".replace(",", ".")
+
 
 # ----------------------------------------------------------------------------
 # Formatação no padrão brasileiro
@@ -216,6 +229,10 @@ TEMPLATE_HTML = """<!DOCTYPE html>
              padding: 16px 20px; font-size: 14px; margin: 8px 0; }
   .proximo .rotulo { font-size: 12px; text-transform: uppercase; letter-spacing: .06em;
                      color: {{ rosa }}; font-weight: 700; display: block; margin-bottom: 4px; }
+  .projecao { background: #F0FDF4; border: 1px solid {{ verde }}; border-radius: 10px;
+              padding: 16px 20px; font-size: 14px; margin: -10px 0 26px; }
+  .projecao .num { font-size: 22px; font-weight: 700; color: {{ verde }}; }
+  .projecao .cav { color: #6B7280; font-size: 12.5px; }
   .stat { font-size: 14px; background: #F9FAFB; border-radius: 10px;
           padding: 16px 20px; }
   .stat b { color: {{ texto }}; }
@@ -243,6 +260,17 @@ TEMPLATE_HTML = """<!DOCTYPE html>
         {% if impacto %}<span class="badge">{{ impacto }}/dia</span>{% endif %}
       </div>
     </div>
+
+    {% if projecao_ano %}
+    <div class="projecao">
+      Escalar o {{ vencedor }} projeta <span class="num">{{ projecao_ano }}/ano</span>
+      de lucro adicional frente ao {{ vice }}, na escala do teste
+      {% if proj_lo %}(entre {{ proj_lo }} e {{ proj_hi }} por ano, com 95% de
+      confiança){% endif %}.
+      <br><span class="cav">Projeção: assume o ganho diário mantido em volume
+      comparável ao do teste — é uma estimativa, não uma garantia.</span>
+    </div>
+    {% endif %}
 
     <p class="nota">Qualidade dos dados: {{ linhas_validas }} de
       {{ linhas_originais }} observações válidas
@@ -363,6 +391,13 @@ def gerar_relatorio(ingestao, analise, caminho_saida: str) -> str:
                           if a.sugestao_proximo_teste
                           and a.sugestao_proximo_teste.padrao != "indefinido"
                           else None),
+        # Impacto anualizado: só é projetado quando a decisão é escalar (significativa).
+        "projecao_ano": (brl_compacto(a.impacto_dia * DIAS_ANO)
+                         if a.significativo and a.impacto_dia is not None else None),
+        "proj_lo": (brl_compacto(a.ic95_impacto[0] * DIAS_ANO)
+                    if a.significativo and a.ic95_impacto else None),
+        "proj_hi": (brl_compacto(a.ic95_impacto[1] * DIAS_ANO)
+                    if a.significativo and a.ic95_impacto else None),
     }
 
     env = Environment(autoescape=True)

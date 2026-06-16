@@ -26,7 +26,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "src
 
 from ingestao import carregar_dataset
 from analise_engine import analisar
-from relatorio import gerar_relatorio, brl
+from relatorio import gerar_relatorio, brl, brl_compacto, DIAS_ANO
 import tracker
 
 
@@ -97,6 +97,9 @@ def _imprimir_resumo(ing, ana, caminho_rel, caminho_tracker, url_sheets):
     if ana.ic95_impacto:
         lo, hi = ana.ic95_impacto
         print(f" Ganho com 95% de confiança: entre {brl(lo)} e {brl(hi)} por dia")
+    if ana.significativo and ana.impacto_dia is not None:
+        print(f" Impacto projetado: ~{brl_compacto(ana.impacto_dia * DIAS_ANO)}/ano "
+              f"(na escala do teste)")
     if ana.alertas_validade:
         print()
         print(" Validade do teste:")
