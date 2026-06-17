@@ -123,6 +123,44 @@ Playwright (Chromium), wkhtmltopdf (via `pdfkit`) ou WeasyPrint. O mais simples
 `brew install wkhtmltopdf`). Sem nenhum backend, o HTML continua sendo gerado —
 basta abri-lo no navegador e usar Imprimir → Salvar como PDF.
 
+## Uso com IA (linguagem natural)
+
+A solução foi pensada para ser acionada por **linguagem natural** numa ferramenta
+de IA (como o Claude Code ou o Cursor). O arquivo `CLAUDE.md` na raiz é lido
+automaticamente por essas ferramentas no início da sessão e ensina à IA como
+operar o sistema — qual comando rodar, qual é a métrica de decisão e como
+interpretar o resultado. Assim, qualquer pessoa do time de Growth analisa um
+teste novo conversando, sem precisar saber Python.
+
+### Como usar
+
+1. Abra o projeto numa ferramenta de IA (por exemplo, rode `claude` na raiz do
+   repositório).
+2. Peça a análise em português, indicando o arquivo do dataset.
+3. A IA roda a solução e devolve a decisão e a recomendação.
+
+### Exemplo de interação
+
+> **Você:** Chegou um teste A/B de cashback novo. O arquivo é
+> `data/dataset_03_parceiroC.csv`. Qual variante devemos escalar para 100% do
+> tráfego e por quê?
+>
+> **IA:** Analisei o teste (rodei `python analise.py data/dataset_03_parceiroC.csv`).
+> Recomendo **escalar o Grupo 1** (cashback de 5%): ele lidera o lucro líquido
+> com cerca de **R$ 773/dia** a mais que o Grupo 2 — que ficou em ponto de
+> equilíbrio, já que 7% de cashback zera a margem do Méliuz nesse parceiro. A
+> confiança é **Alta** (p < 0,001). Gerei o relatório em
+> `relatorios/relatorio_parceiro_c.html` e registrei o teste na planilha de
+> acompanhamento. Como próximo passo, vale testar um tier de cashback um pouco
+> menor, porque o lucro cresce conforme o cashback cai.
+
+O mesmo vale para qualquer teste novo: basta indicar o arquivo do dataset — **não
+é preciso alterar o código**.
+
+![Interação no Claude Code: o pedido em português dispara a análise e a IA devolve a decisão, o porquê, o impacto projetado, a ressalva de validade e a sugestão de próximo teste](docs/exemplo-uso-ia.png)
+
+*Interação real no Claude Code. Note, no rodapé, o pedido seguinte analisando outro
+dataset — a mesma solução, sem nenhuma mudança de código.*
 ## Google Sheets (opcional — diferencial)
 
 Para registrar os testes direto numa planilha do Google Sheets, acrescente a
