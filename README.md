@@ -218,4 +218,5 @@ volume suficiente para compensar a margem cedida ao usuário.
   brasileiro (`R$ 10.273`) e descarta linhas com datas inválidas, valores
   negativos, campos vazios ou duplicatas, reportando o que foi removido.
 - **Reprodutibilidade:** o núcleo é determinístico — mesma entrada, mesma saída.
-- **Stack:** pandas, scipy, matplotlib, Jinja2, gspread, google-auth.
+- **Stack:** pandas, scipy, matplotlib, Jinja2, gspread e google-auth; `pdfkit`
+  para a exportação opcional em PDF e `pytest` para os testes automatizados.
