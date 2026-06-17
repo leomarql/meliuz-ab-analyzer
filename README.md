@@ -32,7 +32,7 @@ inconclusivo, recomenda estender o teste em vez de escalar.
 A solução separa duas camadas, o que garante reúso e consistência:
 
 - **Núcleo determinístico (Python):** toda a matemática — parsing, limpeza,
-  métricas, estatística e regra de decisão — está em código fixo e testável.
+  métricas, estatística e regra de decisão — vive em código fixo e testável.
   Nenhum modelo de IA faz conta com dado financeiro, então o mesmo dataset
   sempre produz o mesmo resultado.
 - **Camada de linguagem natural (`CLAUDE.md` + CLI):** permite acionar tudo por
@@ -50,11 +50,15 @@ meliuz-ab-analyzer/
 ├── analise.py            # CLI: ponto de entrada que orquestra todo o fluxo
 ├── CLAUDE.md             # instruções para acionar a solução por linguagem natural
 ├── requirements.txt      # dependências
+├── pytest.ini            # configuração dos testes
 ├── src/
 │   ├── ingestao.py       # leitura + limpeza robusta dos dados
 │   ├── analise_engine.py # métricas, estatística e decisão
+│   ├── validacao.py      # checagens de validade do teste (SRM, amostra, outliers)
+│   ├── recomendacao.py   # sugestão do próximo teste (elasticidade do cashback)
 │   ├── relatorio.py      # geração do relatório HTML do gestor
 │   └── tracker.py        # registro no CSV e no Google Sheets
+├── tests/                # suíte de testes automatizados (pytest)
 ├── data/                 # os datasets dos testes
 ├── relatorios/           # relatórios HTML gerados
 └── tracker.csv           # planilha de acompanhamento (todos os testes)
@@ -96,6 +100,15 @@ python analise.py data/dataset_03_parceiroC.csv
 Cada execução gera um relatório em `relatorios/` e registra (ou atualiza) a
 linha do teste em `tracker.csv`.
 
+### Testes
+
+A solução tem uma suíte de testes automatizados (parser de moeda, limpeza,
+métricas, decisão, validade do teste, recomendação e tracker). Para rodar:
+
+```bash
+pytest
+```
+
 ## Google Sheets (opcional — diferencial)
 
 Para registrar os testes direto numa planilha do Google Sheets, acrescente a
@@ -122,9 +135,11 @@ Configuração da credencial (uma vez):
 ## Saídas
 
 - **Relatório do gestor** (`relatorios/*.html`): arquivo HTML autocontido com a
-  decisão em destaque, a tabela de métricas por variante, três gráficos (lucro
-  líquido, volume e evolução temporal) e a base estatística. Abre em qualquer
-  navegador e pode ser exportado como PDF.
+  decisão em destaque, o impacto anualizado projetado, a tabela de métricas por
+  variante, três gráficos (lucro líquido, volume e evolução temporal), as
+  checagens de validade do teste, a base estatística com intervalo de confiança
+  e a sugestão do próximo teste. Abre em qualquer navegador e pode ser exportado
+  como PDF.
 - **Planilha de acompanhamento** (`tracker.csv` e/ou Google Sheets): uma linha
   por teste, com nome, descrição, período, variantes, métrica de decisão,
   resultado, decisão, confiança e data da análise.

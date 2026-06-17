@@ -1,5 +1,5 @@
 """
-Checagens de validade do teste A/B — análise crítica antes de decidir.
+Checagens de validade do teste A/B — analisa antes de decidir.
 
 Antes de confiar numa decisão, é preciso desconfiar do teste. Este módulo roda
 diagnósticos de qualidade do experimento (não dos dados brutos, que já foram
@@ -37,14 +37,19 @@ def _zscore_robusto(serie: pd.Series) -> pd.Series:
 
     É usada a versão robusta em vez do z-score clássico (média/desvio-padrão)
     porque a própria presença de outliers contamina a média e o desvio — então
-    o método tradicional "esconderia" os picos que queremos justamente detectar.
+    o método tradicional "esconderia" os picos que se quer justamente detectar.
     A constante 0.6745 calibra a escala para ficar comparável a um z normal.
     """
     mediana = serie.median()
     mad = (serie - mediana).abs().median()
-    if mad == 0:
-        return pd.Series(0.0, index=serie.index)
-    return 0.6745 * (serie - mediana) / mad
+    if mad > 0:
+        return 0.6745 * (serie - mediana) / mad
+    # MAD = 0 (série quase constante): cai para o z-score clássico, que ainda
+    # detecta um pico isolado em meio a valores repetidos.
+    desvio = serie.std(ddof=0)
+    if desvio > 0:
+        return (serie - serie.mean()) / desvio
+    return pd.Series(0.0, index=serie.index)
 
 
 def verificar_validade(df: pd.DataFrame) -> list[AlertaValidade]:
@@ -55,7 +60,7 @@ def verificar_validade(df: pd.DataFrame) -> list[AlertaValidade]:
     n_min, n_max = min(contagens.values()), max(contagens.values())
 
     # 1) Balanceamento de exposição (Sample Ratio Mismatch)
-    # É checado na EXPOSIÇÃO (nº de observações por variante), nunca em
+    # É checada na EXPOSIÇÃO (nº de observações por variante), nunca em
     # compradores/vendas — porque essas são resultado do tratamento, e medir o
     # resultado confundiria o efeito real do teste com um desbalanceamento.
     if n_max > 0 and (n_max - n_min) / n_max > TOLERANCIA_EXPOSICAO:

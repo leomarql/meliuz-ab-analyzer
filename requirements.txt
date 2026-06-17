@@ -10,3 +10,6 @@ matplotlib>=3.7
 # Tracker no Google Sheets (Etapa 5) — o caminho CSV funciona sem estas
 gspread>=6.0
 google-auth>=2.0
+
+# Testes automatizados (desenvolvimento)
+pytest>=7.0
