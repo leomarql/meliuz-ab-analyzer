@@ -26,7 +26,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "src
 
 from ingestao import carregar_dataset
 from analise_engine import analisar
-from relatorio import gerar_relatorio, brl, brl_compacto, DIAS_ANO
+from relatorio import gerar_relatorio, html_para_pdf, brl, brl_compacto, DIAS_ANO
 import tracker
 
 
@@ -46,6 +46,8 @@ def main(argv=None):
                         help="ID da planilha do Google Sheets.")
     parser.add_argument("--aba", default="Testes",
                         help="Nome da aba na planilha (padrão: Testes).")
+    parser.add_argument("--pdf", action="store_true",
+                        help="Gera também o relatório em PDF (além do HTML).")
     args = parser.parse_args(argv)
 
     if not os.path.exists(args.input):
@@ -55,11 +57,21 @@ def main(argv=None):
     ing = carregar_dataset(args.input)
     ana = analisar(ing.df, ing.parceiro)
 
-    # 3) Relatório do gestor
+    # 3) Relatório do gestor (HTML; PDF opcional via --pdf)
     os.makedirs(args.relatorio_dir, exist_ok=True)
     nome_arq = f"relatorio_{ana.parceiro.replace(' ', '_').lower()}.html"
     caminho_rel = os.path.join(args.relatorio_dir, nome_arq)
     gerar_relatorio(ing, ana, caminho_rel)
+
+    caminho_pdf = None
+    if args.pdf:
+        caminho_pdf = html_para_pdf(caminho_rel)
+        if caminho_pdf is None:
+            print("[aviso] Nenhum backend de PDF encontrado. Para habilitar, "
+                  "instale o Playwright (pip install playwright && "
+                  "playwright install chromium) ou o wkhtmltopdf + pdfkit. "
+                  "Alternativa sem instalar nada: abra o HTML e use "
+                  "Imprimir → Salvar como PDF no navegador.")
 
     # 4) Registro na planilha (CSV sempre; Sheets se houver credencial)
     linha = tracker.montar_linha(ing, ana)
@@ -74,10 +86,10 @@ def main(argv=None):
             # Falha no Sheets não derruba o run: o CSV e o relatório já existem.
             print(f"[aviso] Não foi possível escrever no Google Sheets: {e}")
 
-    _imprimir_resumo(ing, ana, caminho_rel, args.tracker, url_sheets)
+    _imprimir_resumo(ing, ana, caminho_rel, args.tracker, url_sheets, caminho_pdf)
 
 
-def _imprimir_resumo(ing, ana, caminho_rel, caminho_tracker, url_sheets):
+def _imprimir_resumo(ing, ana, caminho_rel, caminho_tracker, url_sheets, caminho_pdf=None):
     """Imprime um resumo legível — é o que a ferramenta de IA relata de volta."""
     regua = "=" * 60
     print(regua)
@@ -108,6 +120,8 @@ def _imprimir_resumo(ing, ana, caminho_rel, caminho_tracker, url_sheets):
             print(f"   {marca.get(d.severidade, '·')} {d.titulo}")
     print()
     print(f" Relatório:        {caminho_rel}")
+    if caminho_pdf:
+        print(f" Relatório (PDF):  {caminho_pdf}")
     print(f" Tracker (CSV):    {caminho_tracker}")
     if url_sheets:
         print(f" Tracker (Sheets): {url_sheets}")

@@ -1,15 +1,20 @@
-# Núcleo de análise (Etapas 2-3)
+# Núcleo de análise 
 pandas>=2.0
 numpy>=1.24
 scipy>=1.10
 
-# Relatório do gestor (Etapa 4)
+# Relatório do gestor
 jinja2>=3.1
 matplotlib>=3.7
 
-# Tracker no Google Sheets (Etapa 5) — o caminho CSV funciona sem estas
+# Tracker no Google Sheets — o caminho CSV funciona sem estas
 gspread>=6.0
 google-auth>=2.0
+
+# Exportação em PDF (opcional, via --pdf)
+# pdfkit requer o binário wkhtmltopdf instalado no sistema (wkhtmltopdf.org).
+# Alternativas suportadas: playwright (+ chromium) ou weasyprint.
+pdfkit>=1.0
 
 # Testes automatizados (desenvolvimento)
 pytest>=7.0

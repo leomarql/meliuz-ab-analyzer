@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import base64
 import io
+import os
 from datetime import datetime
 
 import matplotlib
@@ -391,7 +392,7 @@ def gerar_relatorio(ingestao, analise, caminho_saida: str) -> str:
                           if a.sugestao_proximo_teste
                           and a.sugestao_proximo_teste.padrao != "indefinido"
                           else None),
-        # Impacto anualizado: só é projetado quando a decisão é escalar (significativa).
+        # Impacto anualizado: só projetamos quando a decisão é escalar (significativa).
         "projecao_ano": (brl_compacto(a.impacto_dia * DIAS_ANO)
                          if a.significativo and a.impacto_dia is not None else None),
         "proj_lo": (brl_compacto(a.ic95_impacto[0] * DIAS_ANO)
@@ -405,6 +406,56 @@ def gerar_relatorio(ingestao, analise, caminho_saida: str) -> str:
     with open(caminho_saida, "w", encoding="utf-8") as fh:
         fh.write(html)
     return caminho_saida
+
+
+def html_para_pdf(caminho_html: str, caminho_pdf: str | None = None) -> str | None:
+    """
+    Converte um relatório HTML em PDF, tentando os backends disponíveis na ordem
+    de fidelidade. O HTML continua sendo a fonte; o PDF é uma cópia conveniente.
+
+    Backends tentados:
+      1. Playwright (Chromium headless) — melhor fidelidade;
+      2. wkhtmltopdf via pdfkit;
+      3. WeasyPrint.
+
+    Retorna o caminho do PDF gerado, ou None se nenhum backend estiver instalado
+    (a CLI então orienta como habilitar). Cada import é tardio, então a ausência
+    de um backend não quebra o resto do sistema.
+    """
+    if caminho_pdf is None:
+        caminho_pdf = os.path.splitext(caminho_html)[0] + ".pdf"
+
+    # 1) Playwright (Chromium headless)
+    try:
+        from playwright.sync_api import sync_playwright
+        with sync_playwright() as p:
+            navegador = p.chromium.launch()
+            pagina = navegador.new_page()
+            pagina.goto("file://" + os.path.abspath(caminho_html))
+            pagina.pdf(path=caminho_pdf, format="A4", print_background=True)
+            navegador.close()
+        return caminho_pdf
+    except Exception:
+        pass
+
+    # 2) wkhtmltopdf via pdfkit
+    try:
+        import pdfkit
+        pdfkit.from_file(caminho_html, caminho_pdf,
+                         options={"enable-local-file-access": None, "quiet": ""})
+        return caminho_pdf
+    except Exception:
+        pass
+
+    # 3) WeasyPrint
+    try:
+        from weasyprint import HTML
+        HTML(caminho_html).write_pdf(caminho_pdf)
+        return caminho_pdf
+    except Exception:
+        pass
+
+    return None
 
 
 if __name__ == "__main__":

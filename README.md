@@ -109,6 +109,20 @@ métricas, decisão, validade do teste, recomendação e tracker). Para rodar:
 pytest
 ```
 
+### Exportar em PDF
+
+Para gerar também o relatório em PDF (além do HTML), acrescente `--pdf`:
+
+```bash
+python analise.py data/dataset_01_parceiroA.csv --pdf
+```
+
+A conversão usa o primeiro backend disponível, em ordem de fidelidade:
+Playwright (Chromium), wkhtmltopdf (via `pdfkit`) ou WeasyPrint. O mais simples
+é `pip install pdfkit` mais o binário `wkhtmltopdf` (wkhtmltopdf.org; no macOS,
+`brew install wkhtmltopdf`). Sem nenhum backend, o HTML continua sendo gerado —
+basta abri-lo no navegador e usar Imprimir → Salvar como PDF.
+
 ## Google Sheets (opcional — diferencial)
 
 Para registrar os testes direto numa planilha do Google Sheets, acrescente a
